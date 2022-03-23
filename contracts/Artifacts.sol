@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import './ArcaneRelic.sol';
 
-contract Artifacts is AccessControlEnumerable, ERC1155Burnable, ERC1155Supply {
+contract Artifacts is AccessControl, ERC1155Burnable, ERC1155Supply {
     using Strings for uint256;
     using Math for uint256;
 
@@ -32,8 +32,8 @@ contract Artifacts is AccessControlEnumerable, ERC1155Burnable, ERC1155Supply {
         string memory _symbol,
         string memory uri_,
         uint256 basePrice,
-        uint256 maxPrice, // 222 * 1e18
-        uint256 priceIncreaseFactor, // 0.08196
+        uint256 maxPrice,
+        uint256 priceIncreaseFactor,
         ArcaneRelic _xrlc,
         address admin)
         ERC1155(uri_)
@@ -50,28 +50,28 @@ contract Artifacts is AccessControlEnumerable, ERC1155Burnable, ERC1155Supply {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    modifier onlyAdmin() {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "caller is not admin");
-        _;
-    }
-    
-    function setURI(string memory newuri) external onlyAdmin {
+    function setURI(string memory newuri) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setURI(newuri);
     }
 
-    function setURIExtension(string memory newuriExtension) external onlyAdmin {
+    function setURIExtension(string memory newuriExtension)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         _uriExtension = newuriExtension;
     }
 
-    function setBasePrice(uint256 newBasePrice) external onlyAdmin {
+    function setBasePrice(uint256 newBasePrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _basePrice = newBasePrice;
     }
 
-    function setMaxPrice(uint256 newMaxPrice) external onlyAdmin {
+    function setMaxPrice(uint256 newMaxPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _maxPrice = newMaxPrice;
     }
 
-    function setPriceIncreaseFactor(uint256 newPriceIncreaseFactor) external onlyAdmin {
+    function setPriceIncreaseFactor(uint256 newPriceIncreaseFactor)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE) {
         _priceIncreaseFactor = newPriceIncreaseFactor;
     }
 
@@ -112,7 +112,7 @@ contract Artifacts is AccessControlEnumerable, ERC1155Burnable, ERC1155Supply {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC1155, AccessControlEnumerable)
+        override(ERC1155, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

@@ -4,11 +4,7 @@ from brownie import accounts, chain, Artifacts, ArcaneRelic
 from brownie.test import given, strategy
 import time
 
-def print_tx(tx, tx_nb):
-    print(tx.info())
-    print(f"{tx_nb}: timestamp: {tx.timestamp}\nblock: {tx.block_number}")
-    print(f"chain_timestamp: {chain.time()}")
-    print("-" * 80)
+DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 def print_artifact_dist(artifacts):
     total_1 = 0
@@ -65,9 +61,10 @@ def test_uri(contracts):
     xrlc, artifacts = contracts
 
     # not admin
-    with brownie.reverts("caller is not admin"):
+    with brownie.reverts(f"""AccessControl: account \
+{accounts[2].address.lower()} is missing role {DEFAULT_ADMIN_ROLE}"""):
         artifacts.setURI("new_uri/", {'from': accounts[2]})
-        artifacts.setURIExtension(".kebab", {'from': accounts[3]})
+        artifacts.setURIExtension(".kebab", {'from': accounts[2]})
 
 
     # URI query for nonexistent token
@@ -93,10 +90,11 @@ def test_price(contracts):
     xrlc.approve(artifacts, "30000 ether", {'from': accounts[0]})
 
     # not admin
-    with brownie.reverts("caller is not admin"):
-        artifacts.setBasePrice("69 ether", {'from': accounts[2]})
+    with brownie.reverts(f"""AccessControl: account \
+{accounts[3].address.lower()} is missing role {DEFAULT_ADMIN_ROLE}"""):
+        artifacts.setBasePrice("69 ether", {'from': accounts[3]})
         artifacts.setMaxPrice("420 ether", {'from': accounts[3]})
-        artifacts.setPriceIncreaseFactor("0.699 ether", {'from': accounts[4]})
+        artifacts.setPriceIncreaseFactor("0.699 ether", {'from': accounts[3]})
 
     base_price = 122000000000000000000 # 122 ether
     max_price = 222000000000000000000 # 222 ether
