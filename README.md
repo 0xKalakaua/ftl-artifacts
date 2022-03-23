@@ -1,2 +1,2 @@
-# ftl-relics
-Fantom Lords Relics ERC-1155
+# Fantom Lords Artifacts
+Fantom Lords Artifacts ERC-1155
