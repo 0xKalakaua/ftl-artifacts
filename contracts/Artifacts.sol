@@ -33,7 +33,7 @@ contract Artifacts is AccessControl, ERC721Enumerable {
     uint256 private _basePrice;
     uint256 private _maxPrice;
     uint256 private _priceIncreaseFactor;
-    uint256 private nonce;
+    uint256 private _nonce;
 
 
     constructor (
@@ -164,7 +164,7 @@ contract Artifacts is AccessControl, ERC721Enumerable {
 
     function _randomArtifact() private returns (uint256) {
         return 
-            uint256(keccak256(abi.encodePacked(++nonce, block.timestamp, msg.sender, blockhash(block.number - 1)))) % 8;
+            uint256(keccak256(abi.encodePacked(++_nonce, block.timestamp, msg.sender, blockhash(block.number - 1)))) % 8;
     }
 
     function _baseURI() internal view override returns (string memory) {
