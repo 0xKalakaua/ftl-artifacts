@@ -203,4 +203,4 @@ def test_collect_artifacts(contracts):
     print_artifact_dist(artifacts)
 
     # dummy failed test so stdout gets printed
-    artifacts.collectArtifacts(1, {'from': accounts[3]})
+    assert 1 == 2
