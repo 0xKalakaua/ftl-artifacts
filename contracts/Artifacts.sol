@@ -2,46 +2,54 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import './ArcaneRelic.sol';
 
-contract Artifacts is AccessControl, ERC1155Burnable, ERC1155Supply {
+contract Artifacts is AccessControl, ERC721Enumerable {
+    using Counters for Counters.Counter;
     using Strings for uint256;
     using Math for uint256;
 
-    // token
     ArcaneRelic public immutable xrlc;
-    string public name;
-    string public symbol;
+    uint256 public immutable MAX_SUPPLY;
 
-    string private _uri;
-    string private _uriExtension;
+    Counters.Counter private _tokenIdCounter;
+    Counters.Counter[8] private _typeTokenIdCounters;
+
+    // tokenId to Artifact type (0-7)
+    mapping(uint256 => uint256) private _tokenIdToArtifactType;
+    // tokenId to tokenId per type
+    mapping(uint256 => uint256) private _tokenIdToTypeTokenId;
+    // Artifact type (0-7) to URI
+    mapping(uint256 => string) private _typeIdToTypeURI;
+
+    string private _baseTokenURI;
+    string private _uriExtension = ".json";
+    bool private _mintStarted = false;
     uint256 private _basePrice;
     uint256 private _maxPrice;
     uint256 private _priceIncreaseFactor;
-    uint256 private _totalContractSupply;
-    uint256 private _totalMinted;
-    uint256 private nonce;
+    uint256 private _nonce;
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        string memory uri_,
+
+    constructor (
+        string memory name,
+        string memory symbol,
+        string memory baseURI,
         uint256 basePrice,
         uint256 maxPrice,
         uint256 priceIncreaseFactor,
+        uint256 max_supply,
         ArcaneRelic _xrlc,
         address admin)
-        ERC1155(uri_)
+        ERC721(name, symbol)
     {
-        name = _name;
-        symbol = _symbol;
-        _uri = uri_;
-        _uriExtension = ".json";
+        MAX_SUPPLY = max_supply;
+        _baseTokenURI = baseURI;
         _basePrice = basePrice;
         _maxPrice = maxPrice;
         _priceIncreaseFactor = priceIncreaseFactor;
@@ -50,100 +58,132 @@ contract Artifacts is AccessControl, ERC1155Burnable, ERC1155Supply {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function setURI(string memory newuri) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setURI(newuri);
+    modifier onlyAdmin() {
+        _checkRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _;
+    }
+
+    function setBaseURI(string memory newBaseURI) external onlyAdmin {
+        _baseTokenURI = newBaseURI;
     }
 
     function setURIExtension(string memory newuriExtension)
         external
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyAdmin
     {
         _uriExtension = newuriExtension;
     }
 
-    function setBasePrice(uint256 newBasePrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTypeURI(uint256 artifactTypeId, string memory newTypeUri) external onlyAdmin {
+        _typeIdToTypeURI[artifactTypeId] = newTypeUri;
+    }
+    
+    function setBasePrice(uint256 newBasePrice) external onlyAdmin {
         _basePrice = newBasePrice;
     }
 
-    function setMaxPrice(uint256 newMaxPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMaxPrice(uint256 newMaxPrice) external onlyAdmin {
         _maxPrice = newMaxPrice;
     }
 
     function setPriceIncreaseFactor(uint256 newPriceIncreaseFactor)
         external
-        onlyRole(DEFAULT_ADMIN_ROLE) {
+        onlyAdmin
+    {
         _priceIncreaseFactor = newPriceIncreaseFactor;
     }
 
-    function collectArtifact() external {
-        uint256 _price = price();
-        xrlc.burnFrom(msg.sender, _price);
-        _mint(msg.sender, _randomArtifact(), 1, "");
+    function artifactType(uint256 tokenId) external view returns (uint256) {
+        return _tokenIdToArtifactType[tokenId];
     }
 
-    function uri(uint256 id) public view override returns (string memory) {
-        require(exists(id), "URI query for nonexistent token");
-        return string(abi.encodePacked(_uri, id.toString(), _uriExtension));
+    function typeTokenId(uint256 tokenId) external view returns (uint256) {
+        return _tokenIdToTypeTokenId[tokenId];
     }
 
-    function totalSupply() public view returns (uint256) {
-        return _totalContractSupply;
+    function totalSupplyPerType(uint256 artifactTypeId) external view returns (uint256) {
+        return _typeTokenIdCounters[artifactTypeId].current();
     }
 
-    function totalMinted() public view returns (uint256) {
-        return _totalMinted;
+    function startMint() external onlyAdmin {
+        _mintStarted = true;
     }
 
-    function price() public view returns (uint256) {
-        return _maxPrice.min(_priceIncreaseFactor * _totalMinted + _basePrice);
+    function collectArtifacts(uint256 amount) external {
+        uint256 totalPrice = price(amount);
+        require(_mintStarted, "mint has not started yet");
+        require(_tokenIdCounter.current() < MAX_SUPPLY, "all tokens have been minted");
+        require(amount <= 10, "can't mint more than 10 at a time");
+        require(
+            _tokenIdCounter.current() + amount < MAX_SUPPLY + 1,
+            "not enough tokens left to mint"
+        );
+
+        xrlc.burnFrom(msg.sender, totalPrice);
+
+        for (uint256 i = 0; i < amount; ++i) {
+            uint256 artifactTypeId = _randomArtifact();
+
+            _tokenIdCounter.increment();
+            _typeTokenIdCounters[artifactTypeId].increment();
+
+            uint256 tokenId = _tokenIdCounter.current();
+            uint256 typeTokenId = _typeTokenIdCounters[artifactTypeId].current();
+
+            _tokenIdToTypeTokenId[tokenId] = typeTokenId;
+            _tokenIdToArtifactType[tokenId] = artifactTypeId;
+            _safeMint(msg.sender, tokenId);
+        }
     }
 
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "URI query for nonexistent token");
 
-    function _setURI(string memory newuri) internal override {
-        _uri = newuri;
+        uint256 typeTokenId = _tokenIdToTypeTokenId[tokenId];
+        uint256 artifactType = _tokenIdToArtifactType[tokenId];
+        string memory baseURI = _baseURI();
+        string memory typeURI = _typeIdToTypeURI[artifactType];
+
+        if (bytes(typeURI).length > 0) {
+            return string(abi.encodePacked(typeURI, typeTokenId.toString(), _uriExtension));
+        }
+        return string(abi.encodePacked(baseURI, tokenId.toString(), _uriExtension));
+    }
+
+    function price(uint256 amount) public view returns (uint256) {
+        uint256 totalPrice;
+        for (uint256 i = 0; i < amount; ++i) {
+            totalPrice += _price(totalSupply() + i);
+        }
+        return totalPrice;
+    }
+
+    function _price(uint256 totalMinted) private view returns (uint256) {
+        return _maxPrice.min(_priceIncreaseFactor * totalMinted + _basePrice);
     }
 
     function _randomArtifact() private returns (uint256) {
-        // add 1 so the number is between 1 and 8
         return 
-            uint256(keccak256(abi.encodePacked(++nonce, block.timestamp, msg.sender, blockhash(block.number - 1)))) % 8 + 1;
+            uint256(keccak256(abi.encodePacked(++_nonce, block.timestamp, msg.sender, blockhash(block.number - 1)))) % 8;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+        internal
+        override(ERC721Enumerable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId);
     }
 
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC1155, AccessControl)
+        override(AccessControl, ERC721Enumerable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
-    }
-
-    function _beforeTokenTransfer(
-        address operator,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    )
-        internal
-        override(ERC1155, ERC1155Supply) {
-            super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
-            if (from == address(0)) {
-                for (uint256 i = 0; i < ids.length; ++i) {
-                    _totalContractSupply += amounts[i];
-                    _totalMinted += amounts[i];
-                }
-            }
-
-            if (to == address(0)) {
-                for (uint256 i = 0; i < ids.length; ++i) {
-                    uint256 amount = amounts[i];
-                    require(_totalContractSupply >= amount, "ERC1155: burn amount exceeds totalSupply");
-                    unchecked {
-                        _totalContractSupply -= amount;
-                    }
-                }
-        }
     }
 }
