@@ -171,28 +171,6 @@ contract Artifacts is AccessControl, ERC721Enumerable {
         return _baseTokenURI;
     }
 
-    //function _artifactTypeName(uint256 artifactTypeId) private pure returns (string memory) {
-        //if (artifactTypeId == 1) {
-            //return "TYPE 1";
-        //} else if (artifactTypeId == 2) {
-            //return "TYPE 2";
-        //} else if (artifactTypeId == 3) {
-            //return "TYPE 3";
-        //} else if (artifactTypeId == 4) {
-            //return "TYPE 4";
-        //} else if (artifactTypeId == 5) {
-            //return "TYPE 5";
-        //} else if (artifactTypeId == 6) {
-            //return "TYPE 6";
-        //} else if (artifactTypeId == 7) {
-            //return "TYPE 7";
-        //} else if (artifactTypeId == 8) {
-            //return "TYPE 8";
-        //} else {
-            //return "";
-        //}
-    //}
-
     function _beforeTokenTransfer(address from, address to, uint256 tokenId)
         internal
         override(ERC721Enumerable)
