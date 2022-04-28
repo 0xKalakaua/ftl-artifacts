@@ -84,11 +84,11 @@ def test_uri(contracts):
     artifacts.collectArtifacts(2, {'from': accounts[0]})
 
     # test tokenURI
-    assert artifacts.tokenURI(2) == "my_uri/2.json"
+    assert artifacts.tokenURI(2) == "my_uri/2"
 
     # test setBaseURI
     artifacts.setBaseURI("new_uri/", {'from': accounts[0]})
-    assert artifacts.tokenURI(2) == f"new_uri/2.json"
+    assert artifacts.tokenURI(2) == f"new_uri/2"
 
     # test setURIExtension
     artifacts.setURIExtension(".kebab", {'from': accounts[1]})

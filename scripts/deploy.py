@@ -6,16 +6,16 @@ def main():
     work = accounts.load("work")
     print(network.show_active())
     publish_source = True # Not supported on Testnet
-    xrlc = "0x7b8Ca0e3A88d3BaEC8Cb8781e9Ca83706315e0DD"
+    xrlc = "0xE5586582E1a60E302a53e73E4FaDccAF868b459a"
     name = "FTL Artifacts"
     symbol = "ARTIFACT"
-    base_uri = "my_uri/"
+    base_uri = "https://fantomlordsapi.herokuapp.com/artifacts/"
     base_price = "122 ether"
     max_price = "222 ether"
-    max_supply = 500
-    # price_increase_factor = "0.08196 ether"
-    price_increase_factor = "0.827 ether"
-    admin = work
+    max_supply = 10000
+    price_increase_factor = "0.08196 ether" # prod value
+    # price_increase_factor = "0.8197 ether" # test value
+    admin = "0x4a03721C829Ae3d448bF37Cac21527cbE75fc4Cb"
     Artifacts.deploy(
                 name,
                 symbol,

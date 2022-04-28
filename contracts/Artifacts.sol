@@ -28,7 +28,7 @@ contract Artifacts is AccessControl, ERC721Enumerable {
     mapping(uint256 => string) private _typeIdToTypeURI;
 
     string private _baseTokenURI;
-    string private _uriExtension = ".json";
+    string private _uriExtension = "";
     bool private _mintStarted = false;
     uint256 private _basePrice;
     uint256 private _maxPrice;
