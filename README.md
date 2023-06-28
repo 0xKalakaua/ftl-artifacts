@@ -6,3 +6,6 @@ The FTL Artifacts is an NFT contract following the ERC-1155 standard. The mintin
 
 ## Deployment
 The contract is deployed here: https://ftmscan.com/address/0xC021315E4aF3C6cbD2C96E5F7C67d0A4c2F8FE11
+
+## Marketplace
+The Fantom Lords Artifacts can be traded in [Paintswap](https://paintswap.finance/marketplace/fantom/collections/the-artifacts-of-ascension).
